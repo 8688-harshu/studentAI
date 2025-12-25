@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Send, User, Bot, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { generateMockResponse } from "@/lib/mockAI"
+// import { generateMockResponse } from "@/lib/mockAI" 
+import { chatWithAI } from "@/lib/api"
 import { motion, AnimatePresence } from "framer-motion"
 
 export default function Chat() {
@@ -28,13 +29,29 @@ export default function Chat() {
         setQuery("")
         setIsTyping(true)
 
-        // Simulate AI delay
-        setTimeout(() => {
-            const response = generateMockResponse(userMsg.content, marks)
-            const aiMsg = { id: Date.now() + 1, role: "ai", content: response, marks: marks }
+        try {
+            // Call the real API
+            const data = await chatWithAI(userMsg.content, marks);
+
+            const aiMsg = {
+                id: Date.now() + 1,
+                role: "ai",
+                content: data.answer,
+                marks: marks,
+                sources: data.sources // Store sources if we want to show them later
+            }
             setMessages(prev => [...prev, aiMsg])
+        } catch (error) {
+            const errorMsg = {
+                id: Date.now() + 1,
+                role: "ai",
+                content: "Sorry, I encountered an error connecting to the server. Please ensure the backend is running.",
+                marks: null
+            }
+            setMessages(prev => [...prev, errorMsg])
+        } finally {
             setIsTyping(false)
-        }, 1500)
+        }
     }
 
     const handleKeyDown = (e) => {
